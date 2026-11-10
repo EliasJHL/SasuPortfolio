@@ -20,6 +20,7 @@ function FormProfil({ p }: { p: Profil }) {
     bio: p.bio.join('\n'),
     contact_discord: p.contact_discord ?? '',
     instagram: p.instagram ?? '',
+    youtube: p.youtube ?? '',
     titreDemo: p.demo?.titre ?? 'Démo voix',
   })
   const maj = (x: Partial<typeof f>) => setF(v => ({ ...v, ...x }))
@@ -42,6 +43,8 @@ function FormProfil({ p }: { p: Profil }) {
       bio: f.bio.split('\n').map(s => s.trim()).filter(Boolean),
       contact_discord: f.contact_discord.trim() || null,
       instagram: f.instagram.trim().replace(/^@/, '') || null,
+      // accepte aussi le lien complet de la chaîne
+      youtube: f.youtube.trim().replace(/^.*youtube\.com\//, '').replace(/^@/, '').replace(/\/.*$/, '') || null,
       demo: cle ? { url: cle, titre: f.titreDemo.trim() || 'Démo voix', soustitres: lignes.filter(l => l.texte.trim()).sort((a, b) => a.t - b.t) } : null,
     }
     const { error } = await supabase.from('profil').update(ligne).eq('id', 1)
@@ -71,13 +74,16 @@ function FormProfil({ p }: { p: Profil }) {
         </Champ>
       </fieldset>
 
-      <fieldset className="grid gap-4 sm:grid-cols-2">
+      <fieldset className="grid gap-4 sm:grid-cols-3">
         <legend className="mb-4 text-xl font-extrabold">Contact</legend>
         <Champ label="Pseudo Discord à copier">
           <input value={f.contact_discord} onChange={e => maj({ contact_discord: e.target.value })} />
         </Champ>
         <Champ label="Instagram">
           <input value={f.instagram} onChange={e => maj({ instagram: e.target.value })} placeholder="sans le @" />
+        </Champ>
+        <Champ label="Chaîne YouTube">
+          <input value={f.youtube} onChange={e => maj({ youtube: e.target.value })} placeholder="sans le @" />
         </Champ>
       </fieldset>
 

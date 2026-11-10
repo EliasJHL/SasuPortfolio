@@ -4,7 +4,7 @@ import { useRef, type ReactNode } from 'react'
 import type { Profil } from '@/lib/projets'
 import { toast } from '@/lib/utils'
 import ClickSpark from '@/components/ClickSpark'
-import { DISCORD, INSTAGRAM, Logo } from '@/components/Icones'
+import { DISCORD, INSTAGRAM, Logo, YOUTUBE } from '@/components/Icones'
 
 const TITRE = 'Un rôle à caster, un projet à monter ?'
 
@@ -81,6 +81,13 @@ export function Contact({ profil }: { profil: Profil }) {
           <Canal icone={INSTAGRAM} nom="Instagram" id={'@' + profil.instagram}>
             <a className="bouton bouton-petit" href={`https://www.instagram.com/${encodeURIComponent(profil.instagram)}/`} target="_blank" rel="noopener">
               Voir sur Instagram
+            </a>
+          </Canal>
+        )}
+        {profil.youtube && (
+          <Canal icone={YOUTUBE} nom="YouTube" id={'@' + profil.youtube}>
+            <a className="bouton bouton-petit" href={`https://www.youtube.com/@${encodeURIComponent(profil.youtube)}`} target="_blank" rel="noopener">
+              Voir la chaîne
             </a>
           </Canal>
         )}

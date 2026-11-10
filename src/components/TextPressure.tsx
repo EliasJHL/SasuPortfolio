@@ -247,7 +247,10 @@ const TextPressure: React.FC<TextPressureProps> = ({
     if (!container) return;
 
     const resize = () => {
-      const { width: containerW, height: containerH } = container.getBoundingClientRect();
+      // offsetWidth/Height ignorent les transform : le nom est zoomé au défilement (Profil),
+      // getBoundingClientRect renverrait la taille agrandie et figerait une police géante
+      const containerW = container.offsetWidth;
+      const containerH = container.offsetHeight;
       const nextFontSize = Math.max(chars.length ? containerW / (chars.length / 2) : minFontSize, minFontSize);
       setFontSize(nextFontSize);
       setScaleY(scale && containerH > 0 ? containerH / nextFontSize : 1);
