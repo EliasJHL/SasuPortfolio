@@ -1,4 +1,5 @@
 /* Lecteur vidéo : la vignette s'agrandit jusqu'au lecteur (motion layoutId).
+   Fichiers R2 : lecteur maison. YouTube : lecteur YouTube (sans cookies), chargé à l'ouverture.
    Lecture, progression, volume, qualité, plein écran (PC, Android et iPhone).
    Raccourcis : Espace/K lecture, F plein écran, M son, ← → ±5 s, ↑ ↓ volume. */
 import { motion } from 'motion/react'
@@ -6,7 +7,7 @@ import { Maximize, Minimize, Volume2, VolumeX, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { cn, temps } from '@/lib/utils'
 import { IconeLecture } from '@/components/Icones'
-import type { Clip } from '@/lib/projets'
+import { hauteur, miniature, url, type Media } from '@/lib/projets'
 
 type Source = { label: string; src: string }
 type Pref = { volume?: number; muet?: boolean; qualite?: string | null }
@@ -24,7 +25,6 @@ const sauver = (p: Pref) => {
     localStorage.setItem(CLE, JSON.stringify(p))
   } catch {}
 }
-const hauteur = (label: string) => parseInt(label, 10) || 0
 const auto = (s: Source[]) => {
   const c = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection || {}
   if (c.saveData || /2g/.test(c.effectiveType || '')) return s.at(-1)!
@@ -43,7 +43,10 @@ type DocPlein = Document & { webkitFullscreenElement?: Element; webkitExitFullsc
 const enPlein = () => document.fullscreenElement || (document as DocPlein).webkitFullscreenElement
 const sortirPlein = () => enPlein() && (document.exitFullscreen || (document as DocPlein).webkitExitFullscreen)?.call(document)
 
-export function Lecteur({ clip, fermer }: { clip: Clip | null; fermer: () => void }) {
+const LARGEUR = 'w-[min(1100px,100%,calc((100dvh_-_140px)*16/9))]'
+const RESSORT = { type: 'spring', bounce: 0.12, duration: 0.55 } as const
+
+export function Lecteur({ clip, fermer }: { clip: Media | null; fermer: () => void }) {
   const dlg = useRef<HTMLDialogElement>(null)
   useEffect(() => {
     if (clip && !dlg.current!.open) dlg.current!.showModal()
@@ -61,20 +64,47 @@ export function Lecteur({ clip, fermer }: { clip: Clip | null; fermer: () => voi
       onClick={e => e.target === e.currentTarget && close()}
       className="lecteur m-0 size-full max-h-none max-w-none overflow-hidden bg-transparent p-[clamp(12px,3vw,40px)] text-creme"
     >
-      {clip && <Ecran key={clip.id} clip={clip} close={close} />}
+      {clip && (clip.youtube ? <EcranYoutube key={clip.id} clip={clip} close={close} /> : <Ecran key={clip.id} clip={clip} close={close} />)}
     </dialog>
   )
 }
 
-function Ecran({ clip, close }: { clip: Clip; close: () => void }) {
+function Titre({ titre, close }: { titre: string; close: () => void }) {
+  return (
+    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className={cn('flex items-center justify-between gap-4', LARGEUR)}>
+      <p id="lecteur-titre" className="truncate text-lg font-bold">
+        {titre}
+      </p>
+      <button type="button" onClick={close} className="bouton bouton-petit" aria-label="Fermer le lecteur">
+        <X className="size-4" /> Fermer
+      </button>
+    </motion.div>
+  )
+}
+
+function EcranYoutube({ clip, close }: { clip: Media; close: () => void }) {
+  return (
+    <div className="flex size-full flex-col items-center justify-center gap-3">
+      <Titre titre={clip.titre} close={close} />
+      <motion.div layoutId={`clip-${clip.id}`} transition={RESSORT} style={{ borderRadius: 18 }} className={cn('relative aspect-video overflow-hidden bg-black', LARGEUR)}>
+        <iframe
+          src={`https://www.youtube-nocookie.com/embed/${clip.youtube}?autoplay=1&rel=0`}
+          title={clip.titre}
+          allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+          allowFullScreen
+          className="size-full"
+        />
+      </motion.div>
+    </div>
+  )
+}
+
+function Ecran({ clip, close }: { clip: Media; close: () => void }) {
   const ecran = useRef<HTMLDivElement>(null)
   const v = useRef<HTMLVideoElement>(null)
   const barre = useRef<HTMLDivElement>(null)
   const [pref, setPref] = useState(lirePref)
-  const [sources] = useState<Source[]>(() => {
-    const q = Object.entries(clip.qualites || {}).map(([label, src]) => ({ label, src }))
-    return q.length ? q.sort((a, b) => hauteur(b.label) - hauteur(a.label)) : [{ label: 'Normale', src: clip.fichier }]
-  })
+  const [sources] = useState<Source[]>(() => clip.qualites.map(q => ({ label: q.label, src: url(q.url)! })).sort((a, b) => hauteur(b.label) - hauteur(a.label)))
   const choisie = (pref.qualite && sources.find(s => s.label === pref.qualite)) || auto(sources)
   const [source, setSource] = useState(choisie)
   const [pause, setPause] = useState(true)
@@ -203,21 +233,14 @@ function Ecran({ clip, close }: { clip: Clip; close: () => void }) {
 
   return (
     <div className="flex size-full flex-col items-center justify-center gap-3" onKeyDown={clavier}>
-      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex w-[min(1100px,100%,calc((100dvh_-_140px)*16/9))] items-center justify-between gap-4">
-        <p id="lecteur-titre" className="truncate text-lg font-bold">
-          {clip.titre}
-        </p>
-        <button type="button" onClick={close} className="bouton bouton-petit" aria-label="Fermer le lecteur">
-          <X className="size-4" /> Fermer
-        </button>
-      </motion.div>
+      <Titre titre={clip.titre} close={close} />
 
       <motion.div
         ref={ecran}
         layoutId={`clip-${clip.id}`}
-        transition={{ type: 'spring', bounce: 0.12, duration: 0.55 }}
+        transition={RESSORT}
         style={{ borderRadius: 18 }}
-        className={cn('group/ecran relative aspect-video w-[min(1100px,100%,calc((100dvh_-_140px)*16/9))] overflow-hidden bg-black', calme && !menu && 'cursor-none', plein && 'rounded-none!')}
+        className={cn('group/ecran relative aspect-video overflow-hidden bg-black', LARGEUR, calme && !menu && 'cursor-none', plein && 'rounded-none!')}
         onPointerMove={() => montrer()}
         onPointerDown={() => montrer()}
         onContextMenu={e => e.preventDefault()}
@@ -225,7 +248,7 @@ function Ecran({ clip, close }: { clip: Clip; close: () => void }) {
         <video
           ref={v}
           src={source.src}
-          poster={clip.miniature}
+          poster={miniature(clip)}
           playsInline
           disablePictureInPicture
           controlsList="nodownload"

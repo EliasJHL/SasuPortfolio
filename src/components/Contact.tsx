@@ -1,7 +1,7 @@
 /* Acte 5 — le contact. Le titre monte mot par mot au rythme du défilement. */
 import { motion, useScroll, useTransform, type MotionValue } from 'motion/react'
 import { useRef, type ReactNode } from 'react'
-import { SASU } from '@/contenu'
+import type { Profil } from '@/lib/projets'
 import { toast } from '@/lib/utils'
 import ClickSpark from '@/components/ClickSpark'
 import { DISCORD, INSTAGRAM, Logo } from '@/components/Icones'
@@ -34,23 +34,23 @@ function Canal({ icone, nom, id, children }: { icone: string; nom: string; id: s
   )
 }
 
-export function Contact() {
-  const C = SASU.contact
+export function Contact({ profil }: { profil: Profil }) {
+  const pseudo = profil.contact_discord
   const titre = useRef<HTMLHeadingElement>(null)
   const { scrollYProgress } = useScroll({ target: titre, offset: ['start end', 'end 55%'] })
   const mots = TITRE.split(' ')
 
   const copier = async () => {
     try {
-      await navigator.clipboard.writeText(C.discord)
-      toast('Pseudo copié : ' + C.discord)
+      await navigator.clipboard.writeText(pseudo!)
+      toast('Pseudo copié : ' + pseudo)
     } catch {
-      toast('Mon pseudo Discord : ' + C.discord)
+      toast('Mon pseudo Discord : ' + pseudo)
     }
   }
 
   return (
-    <section id="contact" tabIndex={-1} aria-labelledby="titre-contact" className="mx-auto max-w-[1180px] px-(--gouttiere) pt-[clamp(80px,14vh,160px)] pb-40 outline-none lg:pr-36">
+    <section id="contact" tabIndex={-1} aria-labelledby="titre-contact" className="mx-auto max-w-[1180px] px-(--gouttiere) pt-[clamp(80px,14vh,160px)] pb-40 outline-none">
       <h2 ref={titre} id="titre-contact" aria-label={TITRE} className="max-w-[16ch] font-serif text-[clamp(2.8rem,1.4rem+6vw,7rem)] leading-[0.98] font-light tracking-[-0.02em]">
         <span aria-hidden="true">
           {mots.map((m, i) => (
@@ -65,23 +65,25 @@ export function Contact() {
       <p className="mt-8 max-w-[46ch] text-[clamp(1.05rem,1rem+0.4vw,1.3rem)] text-doux">Mes MP sont ouverts. Dis-moi le projet, le personnage et tes délais, je te réponds vite.</p>
 
       <div className="mt-16 border-b border-white/12">
-        <ClickSpark sparkColor={['#e2a63b', '#f2e8d5', '#23a55a']} sparkCount={14} sparkRadius={34} shape="star" className="h-auto">
-          <Canal icone={DISCORD} nom="Discord" id={C.discord}>
-            <button type="button" onClick={copier} className="bouton bouton-plein bouton-petit">
-              Copier le pseudo
-            </button>
-            {SASU.discordId && (
-              <a className="bouton bouton-petit" href={`https://discord.com/users/${SASU.discordId}`} target="_blank" rel="noopener">
+        {pseudo && (
+          <ClickSpark sparkColor={['#e2a63b', '#f2e8d5', '#23a55a']} sparkCount={14} sparkRadius={34} shape="star" className="h-auto">
+            <Canal icone={DISCORD} nom="Discord" id={pseudo}>
+              <button type="button" onClick={copier} className="bouton bouton-plein bouton-petit">
+                Copier le pseudo
+              </button>
+              <a className="bouton bouton-petit" href={`https://discord.com/users/${profil.discord_id}`} target="_blank" rel="noopener">
                 Ouvrir le profil
               </a>
-            )}
+            </Canal>
+          </ClickSpark>
+        )}
+        {profil.instagram && (
+          <Canal icone={INSTAGRAM} nom="Instagram" id={'@' + profil.instagram}>
+            <a className="bouton bouton-petit" href={`https://www.instagram.com/${encodeURIComponent(profil.instagram)}/`} target="_blank" rel="noopener">
+              Voir sur Instagram
+            </a>
           </Canal>
-        </ClickSpark>
-        <Canal icone={INSTAGRAM} nom="Instagram" id={'@' + C.instagram}>
-          <a className="bouton bouton-petit" href={`https://www.instagram.com/${encodeURIComponent(C.instagram)}/`} target="_blank" rel="noopener">
-            Voir sur Instagram
-          </a>
-        </Canal>
+        )}
       </div>
     </section>
   )

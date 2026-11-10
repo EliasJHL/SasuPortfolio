@@ -3,15 +3,16 @@
    en haut à gauche, où il reste (et s'allume en vert quand la voix joue). */
 import { AnimatePresence, motion, useScroll, useSpring, useTransform, type MotionValue } from 'motion/react'
 import { useEffect, useState } from 'react'
-import { SASU } from '@/contenu'
+import { Link } from 'react-router'
+import { useContenu } from '@/contenu'
 import type { ProfilDiscord, Statut } from '@/discord'
-import { cn, toast } from '@/lib/utils'
+import { url, type Profil as ProfilSasu } from '@/lib/projets'
+import { allerA, cn, toast } from '@/lib/utils'
 import { basculerDemo, niveau, useDemo } from '@/voix'
 import LightRays from '@/components/LightRays'
 import TextPressure from '@/components/TextPressure'
 import { ShimmerButton } from '@/components/ui/shimmer-button'
 import { IconeLecture } from '@/components/Icones'
-import { allerA } from '@/components/Timeline'
 
 const LIBELLES: Record<Statut, string> = { online: 'En ligne sur Discord', idle: 'Absent sur Discord', dnd: 'Ne pas déranger', offline: 'Hors ligne sur Discord' }
 const COULEURS: Record<Statut, string> = { online: '#23a55a', idle: '#f0b232', dnd: '#f23f43', offline: '#80848e' }
@@ -35,7 +36,7 @@ function useEcran() {
   return e
 }
 
-export function Profil({ discord }: { discord: ProfilDiscord | null }) {
+export function Profil({ discord, profil }: { discord: ProfilDiscord | null; profil: ProfilSasu }) {
   const { w, h } = useEcran()
   const g = geometrie(w, h)
   const { scrollY } = useScroll()
@@ -59,7 +60,7 @@ export function Profil({ discord }: { discord: ProfilDiscord | null }) {
         {/* le nom respire comme une onde de voix et se gonfle sous le curseur */}
         <motion.div style={{ scale: nomEchelle, opacity: nomOpacite, filter: nomFlou, top: h * 0.05 }} className="absolute inset-x-0 mx-auto aspect-[2/1] w-[min(92vw,105vh)] origin-[50%_70%]">
           <TextPressure
-            text={discord?.nom || SASU.profil.pseudo}
+            text={discord?.nom || profil.pseudo}
             fontFamily="Anybody"
             fontUrl="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@50..150,100..900&display=swap"
             italic={false}
@@ -81,7 +82,7 @@ export function Profil({ discord }: { discord: ProfilDiscord | null }) {
               {LIBELLES[statut || 'offline']}
             </p>
             <p className="mt-2 flex flex-wrap items-center justify-center gap-2 text-doux">
-              @{discord?.handle || SASU.profil.handle}
+              @{discord?.handle || profil.handle}
               {discord?.clan && (
                 <span className="inline-flex items-center gap-1 rounded-md bg-cuir-2 py-px pr-2 pl-1.5 text-[0.85rem] font-semibold text-creme">
                   {discord.clan.badge && <img src={discord.clan.badge} alt="" width={16} height={16} />}
@@ -96,22 +97,22 @@ export function Profil({ discord }: { discord: ProfilDiscord | null }) {
             )}
           </div>
           <div className="flex flex-wrap justify-center gap-3">
-            <BoutonDemo />
+            {profil.demo && <BoutonDemo src={url(profil.demo.url)!} />}
             <a href="#contact" onClick={allerA('contact')} className="bouton">
               Me contacter
             </a>
           </div>
         </motion.div>
 
-        <motion.span style={{ opacity: infosOpacite }} className="defiler absolute bottom-6 left-1/2 h-12 w-px -translate-x-1/2 overflow-hidden bg-white/15 max-lg:bottom-24" aria-hidden="true" />
+        <motion.span style={{ opacity: infosOpacite }} className="defiler absolute bottom-24 left-1/2 h-12 w-px -translate-x-1/2 overflow-hidden bg-white/15 max-sm:hidden" aria-hidden="true" />
       </div>
 
-      <AvatarVolant key={`${w}x${h}`} g={g} p={p} discord={discord} statut={statut} />
+      <AvatarVolant key={`${w}x${h}`} g={g} p={p} discord={discord} statut={statut} nom={discord?.nom || profil.pseudo} />
     </section>
   )
 }
 
-function AvatarVolant({ g, p, discord, statut }: { g: Geo; p: MotionValue<number>; discord: ProfilDiscord | null; statut: Statut | null }) {
+function AvatarVolant({ g, p, discord, statut, nom }: { g: Geo; p: MotionValue<number>; discord: ProfilDiscord | null; statut: Statut | null; nom: string }) {
   const x = useTransform(p, v => lerp(g.cx, BADGE.x, v) - g.s / 2)
   const y = useTransform(p, v => lerp(g.cy, BADGE.y, v) - g.s / 2)
   const scale = useTransform(p, v => lerp(1, BADGE.taille / g.s, v))
@@ -141,7 +142,7 @@ function AvatarVolant({ g, p, discord, statut }: { g: Geo; p: MotionValue<number
         className="fixed top-3 left-3 z-40 flex h-12 items-center gap-3 rounded-full border border-white/8 bg-nuit/75 py-0 pr-4 pl-[58px] text-creme no-underline backdrop-blur-md"
       >
         <span className="leading-tight">
-          <span className="block font-bold">{discord?.nom || SASU.profil.pseudo}</span>
+          <span className="block font-bold">{nom}</span>
           <span className="block text-xs text-doux">{statut ? LIBELLES[statut] : 'Comédien voix'}</span>
         </span>
       </motion.a>
@@ -149,15 +150,14 @@ function AvatarVolant({ g, p, discord, statut }: { g: Geo; p: MotionValue<number
   )
 }
 
-function BoutonDemo() {
+function BoutonDemo({ src }: { src: string }) {
   const { etat } = useDemo()
   const lecture = etat === 'lecture'
-  if (!SASU.demo.fichier) return null
 
   return (
     <ShimmerButton
       type="button"
-      onClick={() => basculerDemo()?.catch(() => toast('Impossible de lire la démo.'))}
+      onClick={() => basculerDemo(src)?.catch(() => toast('Impossible de lire la démo.'))}
       aria-pressed={lecture}
       background="var(--color-creme)"
       shimmerColor="#e2a63b"
@@ -185,9 +185,10 @@ const Barre = ({ k }: { k: number }) => (
 /** Les répliques de la démo, en sous-titres, où que l'on soit sur la page. */
 export function SousTitres() {
   const { etat, t } = useDemo()
-  const ligne = etat === 'lecture' ? SASU.demo.soustitres.find(l => t >= l.t && t <= l.t + l.d) : undefined
+  const soustitres = useContenu().profil?.demo?.soustitres ?? []
+  const ligne = etat === 'lecture' ? soustitres.find(l => t >= l.t && t <= l.t + l.d) : undefined
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-24 z-40 flex justify-center px-4 lg:bottom-10" aria-live="polite">
+    <div className="pointer-events-none fixed inset-x-0 bottom-24 z-40 flex justify-center px-4" aria-live="polite">
       <AnimatePresence mode="wait">
         {ligne && (
           <motion.p
@@ -202,5 +203,24 @@ export function SousTitres() {
         )}
       </AnimatePresence>
     </div>
+  )
+}
+
+/** Sur les autres pages : le profil Discord en badge, qui ramène à l'accueil. */
+export function BadgeDiscord({ discord, nom }: { discord: ProfilDiscord | null; nom: string }) {
+  const statut = discord && !discord.cache ? discord.statut : null
+  const parle = useTransform(niveau, n => `0 0 0 3px rgb(35 165 90 / ${Math.min(1, n * 1.8)})`)
+  return (
+    <Link to="/" className="fixed top-3 left-3 z-40 flex h-12 items-center gap-3 rounded-full border border-white/8 bg-nuit/75 py-0 pr-4 pl-1.5 text-creme no-underline backdrop-blur-md">
+      <span className="relative size-[38px] shrink-0" aria-hidden="true">
+        <motion.img style={{ boxShadow: parle }} className="size-full rounded-full bg-cuir object-cover" src={discord?.avatar || '/favicon.svg'} alt="" decoding="async" />
+        {discord?.deco && <img className="absolute -inset-[10%] size-[120%] max-w-none" src={discord.deco} alt="" decoding="async" />}
+        {statut && <span className="absolute -right-0.5 -bottom-0.5 size-3.5 rounded-full border-[3px] border-nuit" style={{ background: COULEURS[statut] }} />}
+      </span>
+      <span className="leading-tight">
+        <span className="block font-bold">{nom}</span>
+        <span className="block text-xs text-doux">{statut ? LIBELLES[statut] : 'Comédien voix'}</span>
+      </span>
+    </Link>
   )
 }

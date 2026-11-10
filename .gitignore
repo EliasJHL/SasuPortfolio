@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# médias : hébergés sur R2 (scripts/envoyer-r2.mjs), copie locale seulement
+/public/media/

@@ -3,10 +3,10 @@
    `spectre` fait danser les barres de la piste en lecture. */
 import { animate, motionValue } from 'motion/react'
 import { useSyncExternalStore } from 'react'
-import { SASU } from '@/contenu'
 
 export const demo = new Audio()
 demo.preload = 'none'
+demo.crossOrigin = 'anonymous' // les médias viennent de R2 : sans CORS, Web Audio rendrait le son muet
 
 export const niveau = motionValue(0)
 export const spectre = new Uint8Array(48)
@@ -68,8 +68,8 @@ export const jouer = (el: HTMLMediaElement) => {
   return el.play()
 }
 
-export const basculerDemo = () => {
-  if (!demo.src) demo.src = SASU.demo.fichier
+export const basculerDemo = (src: string) => {
+  if (!demo.src) demo.src = src
   return demo.paused ? jouer(demo) : demo.pause()
 }
 

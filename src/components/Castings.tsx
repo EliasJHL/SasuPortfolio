@@ -2,14 +2,14 @@
    Les formes d'onde se dessinent au défilement, puis dansent sur la voix pendant l'écoute. */
 import { motion, useScroll } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
-import { audios, credit, oeuvres, type Clip } from '@/lib/projets'
+import { credit, fichier, miniature, type Media } from '@/lib/projets'
 import { cn, temps, toast } from '@/lib/utils'
 import { jouer, spectre } from '@/voix'
 import { BorderBeam } from '@/components/ui/border-beam'
 import { ScrollVelocityContainer, ScrollVelocityRow } from '@/components/ui/scroll-based-velocity'
 import { IconeLecture } from '@/components/Icones'
 
-export function Castings() {
+export function Castings({ oeuvres, pistes }: { oeuvres: string[]; pistes: Media[] }) {
   return (
     <section id="castings" tabIndex={-1} aria-labelledby="titre-castings" className="py-[clamp(80px,14vh,160px)] outline-none">
       {oeuvres.length > 0 && (
@@ -25,11 +25,11 @@ export function Castings() {
         </ScrollVelocityContainer>
       )}
 
-      {audios.length > 0 && (
-        <div className="mx-auto max-w-[1180px] px-(--gouttiere) lg:pr-36">
+      {pistes.length > 0 && (
+        <div className="mx-auto max-w-[1180px] px-(--gouttiere)">
           <h2 id="titre-castings" className="titre">Castings audio</h2>
           <ul className="mt-[clamp(32px,6vh,64px)] grid gap-[clamp(48px,9vh,96px)]">
-            {audios.map(p => (
+            {pistes.map(p => (
               <Piste key={p.id} p={p} />
             ))}
           </ul>
@@ -54,14 +54,16 @@ const barres = (cle: string) => {
   })
 }
 
-function Piste({ p }: { p: Clip }) {
+export function Piste({ p }: { p: Media }) {
   const li = useRef<HTMLLIElement>(null)
   const ondeEl = useRef<HTMLDivElement>(null)
   const a = useRef<HTMLAudioElement>(null)
   const [lecture, setLecture] = useState(false)
   const [t, setT] = useState(0)
   const [duree, setDuree] = useState(NaN)
-  const [hauteurs] = useState(() => barres(p.titre + p.fichier))
+  const src = fichier(p)
+  const pochette = miniature(p)
+  const [hauteurs] = useState(() => barres(p.titre + src))
   const r = duree ? t / duree : 0
 
   // l'onde se dessine de gauche à droite quand la piste arrive à l'écran
@@ -107,6 +109,7 @@ function Piste({ p }: { p: Clip }) {
         >
           <IconeLecture lecture={lecture} className={cn('size-[40%]', !lecture && 'ml-[6%]')} />
         </button>
+        {pochette && <img src={pochette} alt="" loading="lazy" className="size-[clamp(56px,7vw,76px)] shrink-0 rounded-xl object-cover max-sm:hidden" />}
         <div className="min-w-0 flex-1">
           <h3 className="text-[clamp(1.6rem,1rem+2.6vw,3.2rem)] leading-[1.02] font-extrabold tracking-tight [font-variation-settings:'wdth'_70]">{p.titre}</h3>
           <p className="mt-1.5 text-doux">{credit(p)}</p>
@@ -156,7 +159,8 @@ function Piste({ p }: { p: Clip }) {
       <audio
         ref={a}
         preload="metadata"
-        src={p.fichier}
+        crossOrigin="anonymous"
+        src={src}
         controlsList="nodownload"
         onLoadedMetadata={e => setDuree(e.currentTarget.duration)}
         onTimeUpdate={e => setT(e.currentTarget.currentTime)}

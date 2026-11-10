@@ -1,15 +1,17 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { useEffect, useState } from 'react'
-import { SASU } from '@/contenu'
+import { lazy, Suspense, useEffect, useState } from 'react'
+import { Link, Route, Routes, useLocation } from 'react-router'
+import { charger, useContenu } from '@/contenu'
 import { useDiscord } from '@/discord'
 import { demo } from '@/voix'
 import Noise from '@/components/Noise'
-import { Castings } from '@/components/Castings'
-import { Contact } from '@/components/Contact'
-import { Profil, SousTitres } from '@/components/Profil'
-import { Timeline } from '@/components/Timeline'
-import { Videos } from '@/components/Videos'
-import { TextReveal } from '@/components/ui/text-reveal'
+import { Navigation } from '@/components/Navigation'
+import { BadgeDiscord, SousTitres } from '@/components/Profil'
+import { Accueil } from '@/pages/Accueil'
+import { Categorie } from '@/pages/Categorie'
+import { CV } from '@/pages/CV'
+
+const Admin = lazy(() => import('@/admin/Admin'))
 
 function Toast() {
   const [msg, setMsg] = useState<{ texte: string; id: number } | null>(null)
@@ -44,9 +46,39 @@ function Toast() {
 }
 
 const annee = new Date().getFullYear()
+const TITRES: Record<string, string> = { '/doublage': 'Doublage', '/videos': 'Vidéos', '/production': 'Production', '/cv': 'CV', '/admin': 'Admin' }
+
+function Erreur() {
+  return (
+    <div className="grid min-h-svh place-items-center px-(--gouttiere) text-center">
+      <div>
+        <p className="text-xl font-bold">Impossible de charger le contenu. Vérifie ta connexion.</p>
+        <button type="button" className="bouton mt-6" onClick={() => charger()}>
+          Réessayer
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function Introuvable() {
+  return (
+    <div className="grid min-h-[70svh] place-items-center px-(--gouttiere) text-center">
+      <div>
+        <h1 className="titre">Page introuvable</h1>
+        <Link to="/" className="bouton mt-8">
+          Retour à l'accueil
+        </Link>
+      </div>
+    </div>
+  )
+}
 
 export default function App() {
-  const discord = useDiscord(SASU.discordId)
+  const { profil, statut } = useContenu()
+  const discord = useDiscord(profil?.discord_id ?? '')
+  const { pathname } = useLocation()
+  const nom = discord?.nom || profil?.pseudo || 'Sasu'
 
   useEffect(() => {
     // le lecteur vidéo coupe la voix en cours (les aperçus muets ne coupent rien)
@@ -65,27 +97,49 @@ export default function App() {
     }
   }, [])
 
+  useEffect(() => {
+    document.title = TITRES[pathname] ? `${TITRES[pathname]}, ${nom}` : `${nom}, comédien voix`
+  }, [pathname, nom])
+
   return (
     <>
-      <a className="saut" href="#videos">
-        Aller aux doublages
+      <a className="saut" href="#contenu">
+        Aller au contenu
       </a>
-      <main>
-        <Profil discord={discord} />
-        <section id="voix" tabIndex={-1} aria-label="Voix" className="outline-none">
-          <TextReveal>{SASU.profil.bio.join(' ')}</TextReveal>
-        </section>
-        <Videos />
-        <Castings />
-        <Contact />
-      </main>
-      <footer className="mx-auto max-w-[1180px] px-(--gouttiere) pb-32 text-[0.88rem] text-doux lg:pr-36">
-        <div className="flex flex-wrap justify-between gap-x-8 gap-y-2 border-t border-white/8 pt-8">
-          <p>© {annee} Sasu</p>
-          <p>Extraits présentés à titre de démonstration. Les œuvres originales appartiennent à leurs ayants droit.</p>
-        </div>
-      </footer>
-      <Timeline />
+      {profil ? (
+        <AnimatePresence mode="wait" onExitComplete={() => scrollTo(0, 0)}>
+          <motion.div key={pathname} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+            <main id="contenu" tabIndex={-1} className="outline-none">
+              <Routes location={pathname}>
+                <Route path="/" element={<Accueil discord={discord} profil={profil} />} />
+                <Route path="/doublage" element={<Categorie categorie="doublage" />} />
+                <Route path="/videos" element={<Categorie categorie="montage" />} />
+                <Route path="/production" element={<Categorie categorie="production" />} />
+                <Route path="/cv" element={<CV />} />
+                <Route
+                  path="/admin"
+                  element={
+                    <Suspense fallback={null}>
+                      <Admin />
+                    </Suspense>
+                  }
+                />
+                <Route path="*" element={<Introuvable />} />
+              </Routes>
+            </main>
+            <footer className="mx-auto max-w-[1180px] px-(--gouttiere) pb-32 text-[0.88rem] text-doux">
+              <div className="flex flex-wrap justify-between gap-x-8 gap-y-2 border-t border-white/8 pt-8">
+                <p>© {annee} {profil.pseudo}</p>
+                <p>Extraits présentés à titre de démonstration. Les œuvres originales appartiennent à leurs ayants droit.</p>
+              </div>
+            </footer>
+          </motion.div>
+        </AnimatePresence>
+      ) : (
+        statut === 'erreur' && <Erreur />
+      )}
+      {profil && pathname !== '/' && <BadgeDiscord discord={discord} nom={nom} />}
+      <Navigation />
       <SousTitres />
       <Toast />
       <Noise fixed opacity={0.07} fps={18} zIndex={60} blendMode="overlay" />
