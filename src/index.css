@@ -1,0 +1,147 @@
+@import "tailwindcss";
+
+/* Studio de nuit : l'or et le noir viennent de la décoration dragon de l'avatar,
+   le rouge du statut « ne pas déranger », le vert de l'anneau « parle » de Discord. */
+@theme {
+  --color-nuit: #15100c;
+  --color-cuir: #211913;
+  --color-cuir-2: #2d231b;
+  --color-creme: #f2e8d5;
+  --color-encre: #1b1410;
+  --color-or: #e2a63b;
+  --color-rec: #f23f43;
+  --color-doux: #a8998a;
+
+  --font-sans: "Anybody", system-ui, sans-serif;
+  --font-serif: "Fraunces", Georgia, serif;
+
+  --animate-shimmer-slide: shimmer-slide var(--speed) ease-in-out infinite alternate;
+  --animate-spin-around: spin-around calc(var(--speed) * 2) infinite linear;
+  @keyframes shimmer-slide {
+    to { transform: translate(calc(100cqw - 100%), 0); }
+  }
+  @keyframes spin-around {
+    0% { transform: translateZ(0) rotate(0); }
+    15%, 35% { transform: translateZ(0) rotate(90deg); }
+    65%, 85% { transform: translateZ(0) rotate(270deg); }
+    100% { transform: translateZ(0) rotate(360deg); }
+  }
+}
+
+@layer base {
+  :root {
+    --gouttiere: clamp(16px, 4vw, 48px);
+    color-scheme: dark;
+  }
+  body {
+    margin: 0;
+    background: var(--color-nuit);
+    color: var(--color-creme);
+    font-family: var(--font-sans);
+    font-size: clamp(1rem, 0.96rem + 0.2vw, 1.0625rem);
+    line-height: 1.55;
+    overflow-x: clip;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--color-or); }
+  :focus-visible { outline: 2px solid var(--color-or); outline-offset: 3px; border-radius: 4px; }
+  .saut {
+    position: absolute; left: var(--gouttiere); top: -100px; z-index: 70;
+    background: var(--color-creme); color: var(--color-encre); padding: .6em 1em; border-radius: 6px;
+  }
+  .saut:focus { top: 12px; }
+}
+
+@layer components {
+  .titre {
+    margin: 0;
+    font-size: clamp(2.6rem, 1.4rem + 5vw, 6rem);
+    font-weight: 800;
+    font-variation-settings: 'wdth' 55;
+    line-height: .9;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  .oeuvre {
+    font-size: clamp(2.4rem, 1.6rem + 4vw, 5rem);
+    font-weight: 900;
+    font-variation-settings: 'wdth' 50;
+    line-height: 1.1;
+    color: var(--color-creme);
+  }
+
+  /* indicateur de défilement : une goutte qui descend */
+  .defiler::after {
+    content: ""; position: absolute; left: 0; top: -40%; width: 100%; height: 40%;
+    background: var(--color-or);
+    animation: goutte 1.8s cubic-bezier(.65, 0, .35, 1) infinite;
+  }
+  @keyframes goutte { to { top: 100%; } }
+
+  /* pellicule : perforations en haut et en bas */
+  .pellicule { background: #0b0806; }
+  .pellicule::before, .pellicule::after {
+    content: ""; position: absolute; inset-inline: 0; height: 10px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='10'%3E%3Crect x='7' y='1' width='12' height='8' rx='2' fill='%23f2e8d5' fill-opacity='.55'/%3E%3C/svg%3E") repeat-x;
+  }
+  .pellicule::before { top: 9px; }
+  .pellicule::after { bottom: 9px; }
+
+  /* onde : grandit au défilement (--p), danse sur la voix (--v) */
+  .barre {
+    height: calc(var(--h) * 100%);
+    scale: 1 clamp(0.05, calc(var(--p, 1) * 2 - var(--i)), 1);
+    transition: height .1s linear;
+  }
+  [data-lecture] .barre { height: calc(min(1, var(--h) * (0.35 + var(--v, 0) * 0.85)) * 100%); }
+
+  /* contact : la ligne se remplit d'or au survol */
+  .canal { isolation: isolate; }
+  .canal::before {
+    content: ""; position: absolute; inset-block: -1px 0; inset-inline: calc(var(--gouttiere) * -1);
+    z-index: -1; background: var(--color-or);
+    transform: scaleY(0); transform-origin: bottom;
+    transition: transform .45s cubic-bezier(.65, 0, .35, 1);
+  }
+  @media (hover: hover) {
+    .canal:hover::before { transform: scaleY(1); }
+    .canal:hover .bouton { color: var(--color-encre); border-color: rgb(27 20 16 / .35); }
+    .canal:hover .bouton-plein { background: var(--color-encre); color: var(--color-creme); border-color: var(--color-encre); }
+  }
+
+  .bouton {
+    display: inline-flex; align-items: center; gap: 10px;
+    min-height: 48px; padding: 0 22px;
+    border-radius: 999px; border: 1px solid rgb(242 232 213 / 0.16);
+    background: transparent; color: var(--color-creme);
+    font-weight: 600; text-decoration: none; cursor: pointer;
+    transition: background-color .2s, border-color .2s, color .2s, transform .15s;
+  }
+  .bouton:hover { border-color: var(--color-or); }
+  .bouton:active { transform: translateY(1px); }
+  .bouton-plein { background: var(--color-creme); color: var(--color-encre); border-color: var(--color-creme); }
+  .bouton-plein:hover { background: #fff; border-color: #fff; }
+  .bouton-petit { min-height: 40px; padding: 0 16px; font-size: .92rem; }
+
+  /* lecteur */
+  .lecteur[open] { display: block; }
+  .lecteur::backdrop { background: rgb(21 16 12 / .9); backdrop-filter: blur(10px); animation: fondu .3s ease-out; }
+  @keyframes fondu { from { opacity: 0; } }
+  .cmd {
+    display: grid; place-items: center; width: 40px; height: 40px;
+    border-radius: 999px; color: #fff; cursor: pointer;
+    transition: background-color .2s;
+  }
+  .cmd:hover { background: rgb(255 255 255 / .12); }
+  .volume {
+    appearance: none; height: 4px; border-radius: 999px; cursor: pointer;
+    background: linear-gradient(to right, #fff var(--niveau), rgb(255 255 255 / .25) var(--niveau));
+  }
+  .volume::-webkit-slider-thumb { appearance: none; width: 12px; height: 12px; border-radius: 50%; background: #fff; }
+  .volume::-moz-range-thumb { width: 12px; height: 12px; border: 0; border-radius: 50%; background: #fff; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
