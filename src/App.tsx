@@ -129,7 +129,7 @@ export default function App() {
             </main>
             <footer className="mx-auto max-w-[1180px] px-(--gouttiere) pb-32 text-[0.88rem] text-doux">
               <div className="flex flex-wrap justify-between gap-x-8 gap-y-2 border-t border-white/8 pt-8">
-                <p>© {annee} {profil.pseudo}</p>
+                <p>© {annee} SasuStudio</p>
                 <p>Extraits présentés à titre de démonstration. Les œuvres originales appartiennent à leurs ayants droit.</p>
               </div>
             </footer>

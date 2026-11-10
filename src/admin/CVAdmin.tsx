@@ -7,10 +7,10 @@ import { supabase } from '@/lib/supabase'
 import { toast } from '@/lib/utils'
 import { BoutonSupprimer, Champ, Triable } from '@/admin/outils'
 
-const SECTIONS: Record<LigneCV['section'], string> = { experience: 'Expérience', formation: 'Formation', competence: 'Compétence' }
-// <input type="month"> donne « AAAA-MM », la base stocke une date
-const versMois = (d: string | null) => d?.slice(0, 7) ?? ''
-const versDate = (m: string) => (m ? m + '-01' : null)
+const SECTIONS: Record<LigneCV['section'], string> = { objectif: 'Objectif', experience: 'Expérience', formation: 'Formation', competence: 'Compétence', interet: "Centre d'intérêt" }
+// le CV se lit en années ; la base stocke une date au 1er janvier
+const versAnnee = (d: string | null) => d?.slice(0, 4) ?? ''
+const versDate = (a: string) => (/^\d{4}$/.test(a) ? a + '-01-01' : null)
 
 export function CVAdmin() {
   const { cv } = useContenu()
@@ -43,7 +43,7 @@ export function CVAdmin() {
               <span className="w-28 shrink-0 rounded bg-white/8 px-2 py-0.5 text-center text-sm">{SECTIONS[l.section]}</span>
               <div className="min-w-0">
                 <p className="truncate font-bold">{l.titre}</p>
-                <p className="truncate text-sm text-doux">{[l.structure, l.section !== 'competence' && periode(l.debut, l.fin)].filter(Boolean).join(', ')}</p>
+                <p className="truncate text-sm text-doux">{[l.structure, periode(l.debut, l.fin)].filter(Boolean).join(', ') || l.description}</p>
               </div>
             </div>
             <div className="flex gap-2">
@@ -65,25 +65,28 @@ function FormCV({ l, ordre, fermer }: { l: LigneCV | null; ordre: number; fermer
     titre: l?.titre ?? '',
     structure: l?.structure ?? '',
     lieu: l?.lieu ?? '',
-    debut: versMois(l?.debut ?? null),
-    fin: versMois(l?.fin ?? null),
+    debut: versAnnee(l?.debut ?? null),
+    fin: versAnnee(l?.fin ?? null),
     enCours: !!l?.debut && !l.fin,
     description: l?.description ?? '',
   })
   const maj = (p: Partial<typeof f>) => setF(x => ({ ...x, ...p }))
   const [erreur, setErreur] = useState('')
-  const competence = f.section === 'competence'
+  // seules l'expérience et la formation ont structure, lieu et dates
+  const avecDates = f.section === 'experience' || f.section === 'formation'
+  const sansTitre = f.section === 'objectif'
+  const sansTexte = f.section === 'interet'
 
   const enregistrer = async (e: FormEvent) => {
     e.preventDefault()
     const ligne = {
       section: f.section,
-      titre: f.titre.trim(),
-      structure: competence ? null : f.structure.trim() || null,
-      lieu: competence ? null : f.lieu.trim() || null,
-      debut: competence ? null : versDate(f.debut),
-      fin: competence || f.enCours ? null : versDate(f.fin),
-      description: f.description.trim() || null,
+      titre: sansTitre ? 'Objectif' : f.titre.trim(),
+      structure: avecDates ? f.structure.trim() || null : null,
+      lieu: avecDates ? f.lieu.trim() || null : null,
+      debut: avecDates ? versDate(f.debut) : null,
+      fin: avecDates && !f.enCours ? versDate(f.fin) : null,
+      description: sansTexte ? null : f.description.trim() || null,
       ordre: l?.ordre ?? ordre,
     }
     const { error } = l ? await supabase.from('cv').update(ligne).eq('id', l.id) : await supabase.from('cv').insert(ligne)
@@ -105,10 +108,12 @@ function FormCV({ l, ordre, fermer }: { l: LigneCV | null; ordre: number; fermer
           ))}
         </select>
       </Champ>
-      <Champ label={competence ? 'Compétence' : 'Intitulé'}>
-        <input required value={f.titre} onChange={e => maj({ titre: e.target.value })} placeholder={competence ? 'Voix grave, jeu dramatique' : 'Comédien voix'} />
-      </Champ>
-      {!competence && (
+      {!sansTitre && (
+        <Champ label={avecDates ? 'Intitulé' : SECTIONS[f.section]}>
+          <input required value={f.titre} onChange={e => maj({ titre: e.target.value })} placeholder={avecDates ? 'CAP Électricien' : 'Musique'} />
+        </Champ>
+      )}
+      {avecDates && (
         <>
           <div className="grid gap-4 sm:grid-cols-2">
             <Champ label={f.section === 'formation' ? 'École' : 'Structure'}>
@@ -119,11 +124,11 @@ function FormCV({ l, ordre, fermer }: { l: LigneCV | null; ordre: number; fermer
             </Champ>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Champ label="Début">
-              <input type="month" value={f.debut} onChange={e => maj({ debut: e.target.value })} />
+            <Champ label="Début (année)">
+              <input type="number" min={1950} max={2100} value={f.debut} onChange={e => maj({ debut: e.target.value })} placeholder="2024" />
             </Champ>
-            <Champ label="Fin">
-              <input type="month" value={f.enCours ? '' : f.fin} disabled={f.enCours} onChange={e => maj({ fin: e.target.value })} />
+            <Champ label="Fin (année)">
+              <input type="number" min={1950} max={2100} value={f.enCours ? '' : f.fin} disabled={f.enCours} onChange={e => maj({ fin: e.target.value })} placeholder="2026" />
             </Champ>
           </div>
           <label className="inline-flex w-fit cursor-pointer items-center gap-2">
@@ -132,9 +137,11 @@ function FormCV({ l, ordre, fermer }: { l: LigneCV | null; ordre: number; fermer
           </label>
         </>
       )}
-      <Champ label="Description">
-        <textarea rows={4} value={f.description} onChange={e => maj({ description: e.target.value })} />
-      </Champ>
+      {!sansTexte && (
+        <Champ label={sansTitre ? 'Texte affiché en introduction du CV' : 'Description'}>
+          <textarea rows={sansTitre ? 6 : 4} required={sansTitre} value={f.description} onChange={e => maj({ description: e.target.value })} />
+        </Champ>
+      )}
       {erreur && (
         <p role="alert" className="text-rec">
           {erreur}

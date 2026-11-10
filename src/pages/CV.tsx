@@ -1,5 +1,5 @@
-/* CV : expérience et formation sur une frise qui se dessine au défilement,
-   chaque étape s'allume quand la ligne l'atteint. Compétences en dessous. */
+/* CV : l'objectif en introduction, expérience et formation sur une frise qui se dessine
+   au défilement (chaque étape s'allume quand la ligne l'atteint), puis compétences et centres d'intérêt. */
 import { motion, useScroll, useSpring, useTransform } from 'motion/react'
 import { useRef } from 'react'
 import { useContenu } from '@/contenu'
@@ -48,10 +48,11 @@ export function CV() {
   const { cv } = useContenu()
   const section = (s: LigneCV['section']) => cv.filter(l => l.section === s)
   const competences = section('competence')
+  const interets = section('interet')
 
   return (
     <div className="mx-auto max-w-[980px] px-(--gouttiere) pt-28 pb-24">
-      <EnTete titre="CV" />
+      <EnTete titre="CV">{section('objectif').map(l => l.description).filter(Boolean).join('\n\n') || undefined}</EnTete>
       {section('experience').length > 0 && <Frise titre="Expérience" lignes={section('experience')} />}
       {section('formation').length > 0 && <Frise titre="Formation" lignes={section('formation')} />}
       {competences.length > 0 && (
@@ -62,6 +63,18 @@ export function CV() {
               <li key={c.id} className="border-t border-white/10 py-4">
                 <p className="text-lg font-bold">{c.titre}</p>
                 {c.description && <p className="mt-1 text-doux">{c.description}</p>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {interets.length > 0 && (
+        <section className="mt-[clamp(48px,9vh,96px)]">
+          <h2 className="titre text-[clamp(2.2rem,1.4rem+3.4vw,4.6rem)]">Centres d'intérêt</h2>
+          <ul className="mt-8 flex flex-wrap gap-2.5">
+            {interets.map(c => (
+              <li key={c.id} className="rounded-full border border-white/14 px-4 py-2 text-[1.02rem]">
+                {c.titre}
               </li>
             ))}
           </ul>

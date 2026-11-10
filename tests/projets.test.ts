@@ -35,7 +35,8 @@ test('oeuvres regroupe les saisons', () => {
 })
 
 test('periode écrit les dates du CV', () => {
-  assert.equal(periode('2024-03-01', null), 'mars 2024 – en cours')
-  assert.equal(periode('2022-09-01', '2024-06-01'), 'septembre 2022 – juin 2024')
+  assert.equal(periode('2024-01-01', null), '2024 – en cours')
+  assert.equal(periode('2024-01-01', '2026-01-01'), '2024 – 2026')
+  assert.equal(periode('2025-01-01', '2025-01-01'), '2025')
   assert.equal(periode(null, null), '')
 })

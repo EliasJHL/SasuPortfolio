@@ -31,7 +31,7 @@ export type Profil = {
 }
 export type LigneCV = {
   id: string
-  section: 'experience' | 'formation' | 'competence'
+  section: 'objectif' | 'experience' | 'formation' | 'competence' | 'interet'
   titre: string
   structure: string | null
   lieu: string | null
@@ -58,8 +58,13 @@ export const jour = (d?: string | null) => (d ? new Date(d + 'T12:00').toLocaleD
 export const oeuvre = (m: Pick<Media, 'oeuvre'>) => m.oeuvre?.split(',')[0].trim() || undefined
 export const oeuvres = (ms: Pick<Media, 'oeuvre'>[]) => [...new Set(ms.map(oeuvre).filter(Boolean))] as string[]
 
-const mois = (d: string) => new Date(d.slice(0, 10) + 'T12:00').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
-export const periode = (debut: string | null, fin: string | null) => (debut ? `${mois(debut)} – ${fin ? mois(fin) : 'en cours'}` : fin ? mois(fin) : '')
+// le CV se lit en années : « 2024 – 2026 », « 2025 – en cours »
+const an = (d: string) => d.slice(0, 4)
+export const periode = (debut: string | null, fin: string | null) => {
+  if (!debut) return fin ? an(fin) : ''
+  if (!fin) return `${an(debut)} – en cours`
+  return an(debut) === an(fin) ? an(debut) : `${an(debut)} – ${an(fin)}`
+}
 
 /** youtu.be/ID, youtube.com/watch?v=ID, /shorts/ID, /embed/ID, /live/ID ou l'ID seul ; null sinon. */
 export function idYoutube(lien: string) {

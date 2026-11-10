@@ -48,9 +48,9 @@ export function Pellicule({ medias }: { medias: Media[] }) {
           {medias.map(m => (
             <Plan key={m.id} m={m} x={x} ouvert={clip?.id === m.id} ouvrir={() => setClip(m)} centrer={centrer} />
           ))}
-          <li className="grid w-[min(50vw,380px)] shrink-0" onFocus={e => centrer(e.currentTarget)}>
+          <li className="w-[min(74vw,620px)] shrink-0 self-start" onFocus={e => centrer(e.currentTarget)}>
             <Link to="/doublage" className="group grid aspect-video place-items-center rounded-[10px] border border-dashed border-creme/25 text-center no-underline transition-colors hover:border-or">
-              <span className="text-[clamp(1.2rem,1rem+1vw,1.8rem)] leading-tight font-extrabold text-creme [font-variation-settings:'wdth'_70] group-hover:text-or">Voir tous les doublages</span>
+              <span className="px-6 text-[clamp(1.8rem,1.2rem+2.4vw,3.4rem)] leading-none font-extrabold text-creme [font-variation-settings:'wdth'_70] group-hover:text-or">Voir tous les doublages</span>
             </Link>
           </li>
         </motion.ul>

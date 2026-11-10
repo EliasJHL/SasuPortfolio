@@ -28,7 +28,7 @@ export function EnTete({ titre, children }: { titre: string; children?: ReactNod
           ))}
         </motion.span>
       </h1>
-      {children && <p className="mt-5 max-w-[52ch] text-[clamp(1.05rem,1rem+0.4vw,1.3rem)] text-doux">{children}</p>}
+      {children && <p className="mt-5 max-w-[56ch] text-[clamp(1.05rem,1rem+0.4vw,1.3rem)] whitespace-pre-line text-doux">{children}</p>}
     </header>
   )
 }
