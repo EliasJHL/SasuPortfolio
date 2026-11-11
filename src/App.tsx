@@ -9,6 +9,7 @@ import { Navigation } from '@/components/Navigation'
 import { BadgeDiscord, SousTitres } from '@/components/Profil'
 import { Accueil } from '@/pages/Accueil'
 import { Categorie } from '@/pages/Categorie'
+import { Coaching } from '@/pages/Coaching'
 import { CV } from '@/pages/CV'
 
 const Admin = lazy(() => import('@/admin/Admin'))
@@ -46,7 +47,7 @@ function Toast() {
 }
 
 const annee = new Date().getFullYear()
-const TITRES: Record<string, string> = { '/doublage': 'Doublage', '/videos': 'Vidéos', '/production': 'Production', '/cv': 'CV', '/admin': 'Admin' }
+const TITRES: Record<string, string> = { '/doublage': 'Doublage', '/videos': 'Vidéos', '/production': 'Production', '/cv': 'CV', '/coaching': 'Coaching', '/admin': 'Admin' }
 
 function Erreur() {
   return (
@@ -75,7 +76,7 @@ function Introuvable() {
 }
 
 export default function App() {
-  const { profil, statut } = useContenu()
+  const { profil, statut, admin } = useContenu()
   const discord = useDiscord(profil?.discord_id ?? '')
   const { pathname } = useLocation()
   const nom = discord?.nom || profil?.pseudo || 'Sasu'
@@ -98,8 +99,9 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    document.title = TITRES[pathname] ? `${TITRES[pathname]}, ${nom}` : `${nom}, comédien voix`
-  }, [pathname, nom])
+    const titre = pathname === '/coaching' && !profil?.coaching && !admin ? undefined : TITRES[pathname]
+    document.title = titre ? `${titre}, ${nom}` : `${nom}, comédien voix`
+  }, [pathname, nom, profil?.coaching, admin])
 
   return (
     <>
@@ -116,6 +118,7 @@ export default function App() {
                 <Route path="/videos" element={<Categorie categorie="montage" />} />
                 <Route path="/production" element={<Categorie categorie="production" />} />
                 <Route path="/cv" element={<CV />} />
+                <Route path="/coaching" element={profil.coaching || admin ? <Coaching /> : <Introuvable />} />
                 <Route
                   path="/admin"
                   element={

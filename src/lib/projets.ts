@@ -28,6 +28,7 @@ export type Profil = {
   contact_discord: string | null
   instagram: string | null
   youtube: string | null
+  coaching: boolean
   demo: { url: string; titre: string; soustitres: SousTitre[] } | null
 }
 export type LigneCV = {

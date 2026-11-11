@@ -1,6 +1,6 @@
 /* Le dock (Magic UI) : les pages, puis le compte Discord.
-   Une catégorie sans contenu publié n'apparaît pas pour les visiteurs. */
-import { AudioLines, Clapperboard, FileText, House, Mic, type LucideIcon } from 'lucide-react'
+   Une catégorie sans contenu publié, ou le coaching désactivé, n'apparaît pas pour les visiteurs. */
+import { AudioLines, CalendarCheck, Clapperboard, FileText, House, Mic, type LucideIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import type { ReactNode } from 'react'
 import { Link, useLocation } from 'react-router'
@@ -16,6 +16,7 @@ const PAGES: { to: string; label: string; Icone: LucideIcon; categorie?: Categor
   { to: '/videos', label: 'Vidéos', Icone: Clapperboard, categorie: 'montage' },
   { to: '/production', label: 'Production', Icone: AudioLines, categorie: 'production' },
   { to: '/cv', label: 'CV', Icone: FileText },
+  { to: '/coaching', label: 'Coaching', Icone: CalendarCheck },
 ]
 
 function Lien({ to, label, actif, children }: { to: string; label: string; actif: boolean; children: ReactNode }) {
@@ -31,9 +32,9 @@ function Lien({ to, label, actif, children }: { to: string; label: string; actif
 }
 
 export function Navigation() {
-  const { medias, cv, session, admin } = useContenu()
+  const { profil, medias, cv, session, admin } = useContenu()
   const { pathname } = useLocation()
-  const visible = (p: (typeof PAGES)[number]) => admin || (p.categorie ? medias.some(m => m.categorie === p.categorie && m.publie) : p.to !== '/cv' || cv.length > 0)
+  const visible = (p: (typeof PAGES)[number]) => admin || (p.categorie ? medias.some(m => m.categorie === p.categorie && m.publie) : p.to === '/cv' ? cv.length > 0 : p.to !== '/coaching' || !!profil?.coaching)
   const avatar = session?.user.user_metadata.avatar_url as string | undefined
 
   return (

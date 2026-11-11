@@ -1,10 +1,12 @@
 /* Espace admin : connexion Discord, puis un onglet par type de contenu. Chargé à la demande. */
 import { motion } from 'motion/react'
 import { useState, type ReactNode } from 'react'
-import { connecter, deconnecter, useContenu } from '@/contenu'
-import { cn } from '@/lib/utils'
+import { charger, connecter, deconnecter, useContenu } from '@/contenu'
+import { supabase } from '@/lib/supabase'
+import { cn, toast } from '@/lib/utils'
 import { DISCORD, Logo } from '@/components/Icones'
 import { CVAdmin } from '@/admin/CVAdmin'
+import { Interrupteur } from '@/admin/outils'
 import { MediasAdmin } from '@/admin/Medias'
 import { ProfilAdmin } from '@/admin/ProfilAdmin'
 
@@ -13,6 +15,7 @@ const ONGLETS = [
   { id: 'montage', label: 'Vidéos' },
   { id: 'production', label: 'Production' },
   { id: 'cv', label: 'CV' },
+  { id: 'coaching', label: 'Coaching' },
   { id: 'profil', label: 'Profil' },
 ] as const
 type Onglet = (typeof ONGLETS)[number]['id']
@@ -98,8 +101,23 @@ function Tableau({ nom }: { nom?: string }) {
       </div>
 
       <div id="panneau" role="tabpanel" aria-labelledby={`onglet-${onglet}`} className="mt-8">
-        {onglet === 'cv' ? <CVAdmin /> : onglet === 'profil' ? <ProfilAdmin /> : <MediasAdmin key={onglet} categorie={onglet} />}
+        {onglet === 'cv' ? <CVAdmin /> : onglet === 'coaching' ? <CoachingAdmin /> : onglet === 'profil' ? <ProfilAdmin /> : <MediasAdmin key={onglet} categorie={onglet} />}
       </div>
+    </div>
+  )
+}
+
+function CoachingAdmin() {
+  const { profil } = useContenu()
+  const basculer = async (coaching: boolean) => {
+    const { error } = await supabase.from('profil').update({ coaching }).eq('id', 1)
+    toast(error ? "La modification n'a pas été enregistrée." : coaching ? 'Page Coaching visible.' : 'Page Coaching masquée.')
+    charger()
+  }
+  return (
+    <div className="grid max-w-xl gap-3">
+      <Interrupteur label="Page Coaching visible" actif={!!profil?.coaching} changer={basculer} />
+      <p className="text-doux">Masquée, elle disparaît du dock et son adresse affiche « Page introuvable ». Connecté en admin, tu la vois toujours.</p>
     </div>
   )
 }
