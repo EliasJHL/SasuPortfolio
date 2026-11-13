@@ -110,14 +110,15 @@ function Tableau({ nom }: { nom?: string }) {
 function CoachingAdmin() {
   const { profil } = useContenu()
   const basculer = async (coaching: boolean) => {
-    const { error } = await supabase.from('profil').update({ coaching }).eq('id', 1)
-    toast(error ? "La modification n'a pas été enregistrée." : coaching ? 'Page Coaching visible.' : 'Page Coaching masquée.')
+    // .select() : une mise à jour refusée par la RLS ne renvoie pas d'erreur, seulement aucune ligne
+    const { data, error } = await supabase.from('profil').update({ coaching }).eq('id', 1).select('coaching')
+    toast(error || !data?.length ? "La modification n'a pas été enregistrée." : coaching ? 'Page Coaching visible.' : 'Page Coaching masquée.')
     charger()
   }
   return (
     <div className="grid max-w-xl gap-3">
       <Interrupteur label="Page Coaching visible" actif={!!profil?.coaching} changer={basculer} />
-      <p className="text-doux">Masquée, elle disparaît du dock et son adresse affiche « Page introuvable ». Connecté en admin, tu la vois toujours.</p>
+      <p className="text-doux">Masquée, elle disparaît du dock et son adresse affiche « Page introuvable ». Connecté en admin, tu la vois toujours, en grisé dans le dock.</p>
     </div>
   )
 }

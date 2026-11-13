@@ -173,8 +173,9 @@ export function Triable<T extends { id: string; ordre: number }>({ table, items,
     setGlisse(l)
     sauver(l)
   }
+  // grid-cols-1 (minmax(0, 1fr)) : sans lui, un long texte tronqué élargit toute la liste et repousse les boutons hors de l'écran
   return (
-    <Reorder.Group axis="y" values={liste} onReorder={setGlisse} className="grid gap-2">
+    <Reorder.Group axis="y" values={liste} onReorder={setGlisse} className="grid grid-cols-1 gap-2">
       {liste.map((x, i) => (
         <Element key={x.id} x={x} fin={() => glisse && sauver(glisse)} deplacer={d => deplacer(i, d)}>
           {p => rendu(x, p)}

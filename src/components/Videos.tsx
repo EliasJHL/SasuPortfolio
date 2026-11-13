@@ -1,8 +1,8 @@
 /* Acte 3 — les doublages vidéo sur une pellicule.
-   Le défilement vertical fait avancer la pellicule à l'horizontale ;
-   le plan au centre de l'écran est net, les autres s'assombrissent. */
-import { motion, useScroll, useSpring, useTransform, type MotionStyle, type MotionValue } from 'motion/react'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+   Le défilement vertical fait avancer la pellicule à l'horizontale ; sur écran tactile, elle se fait glisser au doigt.
+   Le plan au centre de l'écran est net, les autres s'assombrissent. */
+import { motion, useMotionValue, useScroll, useSpring, useTransform, type MotionStyle, type MotionValue } from 'motion/react'
+import { useEffect, useLayoutEffect, useRef, useState, type UIEvent } from 'react'
 import { Link } from 'react-router'
 import { credit, fichier, jour, miniature, plusLegere, type Media } from '@/lib/projets'
 import { cn, temps } from '@/lib/utils'
@@ -16,8 +16,20 @@ export function Pellicule({ medias }: { medias: Media[] }) {
   const [clip, setClip] = useState<Media | null>(null)
   const { scrollYProgress } = useScroll({ target: zone, offset: ['start start', 'end end'] })
   const lisse = useSpring(scrollYProgress, { stiffness: 220, damping: 40, restDelta: 0.0005 })
-  const x = useTransform(lisse, v => -v * course)
-  const avance = useTransform(lisse, v => v * 100 + '%')
+  const defile = useTransform(lisse, v => -v * course)
+  const avanceDefile = useTransform(lisse, v => v * 100 + '%')
+  // au doigt, monter et descendre pour aller à gauche ou à droite est pénible : la pellicule glisse d'elle-même
+  // et la page garde un défilement vertical normal
+  const [tactile] = useState(() => matchMedia('(hover: none)').matches)
+  const doigt = useMotionValue(0)
+  const avanceDoigt = useMotionValue('0%')
+  const x = tactile ? doigt : defile
+  const avance = tactile ? avanceDoigt : avanceDefile
+  const glisser = (e: UIEvent<HTMLDivElement>) => {
+    const d = e.currentTarget
+    doigt.set(-d.scrollLeft)
+    avanceDoigt.set((d.scrollLeft / Math.max(1, d.scrollWidth - d.clientWidth)) * 100 + '%')
+  }
 
   useLayoutEffect(() => {
     const mesurer = () => setCourse(Math.max(0, piste.current!.scrollWidth - innerWidth))
@@ -29,6 +41,7 @@ export function Pellicule({ medias }: { medias: Media[] }) {
 
   // au clavier : amène le plan qui reçoit le focus au centre
   const centrer = (li: HTMLElement) => {
+    if (tactile) return // le navigateur fait déjà défiler la pellicule jusqu'au plan
     li.closest('.overflow-hidden')!.scrollLeft = 0
     if (!course) return
     const v = Math.max(0, Math.min(1, (li.offsetLeft + li.offsetWidth / 2 - innerWidth / 2) / course))
@@ -37,23 +50,25 @@ export function Pellicule({ medias }: { medias: Media[] }) {
 
   if (!medias.length) return null
   return (
-    <section id="videos" ref={zone} tabIndex={-1} aria-labelledby="titre-videos" style={{ height: `calc(100svh + ${course}px)` }} className="relative outline-none">
-      <div className="sticky top-0 flex h-svh flex-col justify-center overflow-hidden py-20">
+    <section id="videos" ref={zone} tabIndex={-1} aria-labelledby="titre-videos" style={tactile ? undefined : { height: `calc(100svh + ${course}px)` }} className="relative outline-none">
+      <div className={cn('flex flex-col justify-center overflow-hidden py-20', !tactile && 'sticky top-0 h-svh')}>
         <div className="mb-[clamp(20px,4vh,44px)] flex items-end justify-between gap-6 px-(--gouttiere)">
           <h2 id="titre-videos" className="titre">Doublages vidéo</h2>
           <p className="pb-2 whitespace-nowrap text-doux">{medias.length} extraits</p>
         </div>
 
-        <motion.ul ref={piste} style={{ x }} className="pellicule relative flex w-max gap-[clamp(14px,2vw,28px)] px-(--gouttiere) py-8">
-          {medias.map(m => (
-            <Plan key={m.id} m={m} x={x} ouvert={clip?.id === m.id} ouvrir={() => setClip(m)} centrer={centrer} />
-          ))}
-          <li className="w-[min(74vw,620px)] shrink-0 self-start" onFocus={e => centrer(e.currentTarget)}>
-            <Link to="/doublage" className="group grid aspect-video place-items-center rounded-[10px] border border-dashed border-creme/25 text-center no-underline transition-colors hover:border-or">
-              <span className="px-6 text-[clamp(1.8rem,1.2rem+2.4vw,3.4rem)] leading-none font-extrabold text-creme [font-variation-settings:'wdth'_70] group-hover:text-or">Voir tous les doublages</span>
-            </Link>
-          </li>
-        </motion.ul>
+        <div onScroll={tactile ? glisser : undefined} className={cn(tactile && 'snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none]')}>
+          <motion.ul ref={piste} style={tactile ? undefined : { x }} className="pellicule relative flex w-max gap-[clamp(14px,2vw,28px)] px-(--gouttiere) py-8">
+            {medias.map(m => (
+              <Plan key={m.id} m={m} x={x} ouvert={clip?.id === m.id} ouvrir={() => setClip(m)} centrer={centrer} />
+            ))}
+            <li className="w-[min(74vw,620px)] shrink-0 snap-center self-start" onFocus={e => centrer(e.currentTarget)}>
+              <Link to="/doublage" className="group grid aspect-video place-items-center rounded-[10px] border border-dashed border-creme/25 text-center no-underline transition-colors hover:border-or">
+                <span className="px-6 text-[clamp(1.8rem,1.2rem+2.4vw,3.4rem)] leading-none font-extrabold text-creme [font-variation-settings:'wdth'_70] group-hover:text-or">Voir tous les doublages</span>
+              </Link>
+            </li>
+          </motion.ul>
+        </div>
 
         <div className="mx-(--gouttiere) mt-6 h-px bg-white/10" aria-hidden="true">
           <motion.div className="h-full bg-or" style={{ width: avance }} />
@@ -82,7 +97,7 @@ function Plan({ m, x, ouvert, ouvrir, centrer }: { m: Media; x: MotionValue<numb
   const legende = useTransform(d, [0, 0.5], [1, 0.35])
 
   return (
-    <motion.li ref={li} style={{ scale }} className="group w-[min(74vw,620px)] shrink-0" onFocus={() => centrer(li.current!)}>
+    <motion.li ref={li} style={{ scale }} className="group w-[min(74vw,620px)] shrink-0 snap-center" onFocus={() => centrer(li.current!)}>
       <Vignette m={m} ouvert={ouvert} ouvrir={ouvrir} style={{ filter }} />
       <motion.div style={{ opacity: legende }}>
         <Legende m={m} />

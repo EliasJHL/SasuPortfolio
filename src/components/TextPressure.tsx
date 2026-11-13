@@ -348,7 +348,11 @@ const TextPressure: React.FC<TextPressureProps> = ({
           previous.alphaVal !== alphaVal ||
           previous.color !== color
         ) {
-          span.style.fontVariationSettings = settings;
+          // font-weight et font-stretch plutôt que font-variation-settings : Google Fonts envoie des polices statiques
+          // à certains navigateurs (Opera), qui ignorent alors les réglages bas niveau et laissent le nom figé en maigre
+          span.style.fontWeight = String(wght);
+          span.style.fontStretch = `${wdth}%`;
+          span.style.fontVariationSettings = options.italic ? `'ital' ${italVal}` : '';
           span.style.opacity = alphaVal;
           span.style.color = color;
           applied[i] = { span, settings, alphaVal, color };
