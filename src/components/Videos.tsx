@@ -2,7 +2,7 @@
    Le défilement vertical fait avancer la pellicule à l'horizontale ; sur écran tactile, elle se fait glisser au doigt.
    Le plan au centre de l'écran est net, les autres s'assombrissent. */
 import { motion, useMotionValue, useScroll, useSpring, useTransform, type MotionStyle, type MotionValue } from 'motion/react'
-import { useEffect, useLayoutEffect, useRef, useState, type UIEvent } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type UIEvent } from 'react'
 import { Link } from 'react-router'
 import { credit, fichier, jour, miniature, plusLegere, type Media } from '@/lib/projets'
 import { cn, temps } from '@/lib/utils'
@@ -10,10 +10,36 @@ import { IconeLecture } from '@/components/Icones'
 import { Lecteur } from '@/components/Lecteur'
 
 export function Pellicule({ medias }: { medias: Media[] }) {
+  const [clip, setClip] = useState<Media | null>(null)
+  if (!medias.length) return null
+  return (
+    <Bande
+      id="videos"
+      titre="Doublages vidéo"
+      compte={`${medias.length} extraits`}
+      plans={medias.map(m => ({
+        cle: m.id,
+        vue: style => <Vignette m={m} ouvert={clip?.id === m.id} ouvrir={() => setClip(m)} style={style} />,
+        legende: <Legende m={m} />,
+      }))}
+      fin={
+        <Link to="/doublage" className="group grid aspect-video place-items-center rounded-[10px] border border-dashed border-creme/25 text-center no-underline transition-colors hover:border-or">
+          <span className="px-6 text-[clamp(1.8rem,1.2rem+2.4vw,3.4rem)] leading-none font-extrabold text-creme [font-variation-settings:'wdth'_70] group-hover:text-or">Voir tous les doublages</span>
+        </Link>
+      }
+    >
+      <Lecteur clip={clip} fermer={() => setClip(null)} />
+    </Bande>
+  )
+}
+
+type PlanFilm = { cle: string; vue: (style: MotionStyle) => ReactNode; legende: ReactNode }
+
+/** La pellicule elle-même : des plans côte à côte, puis un carton de fin. */
+export function Bande({ id, titre, compte, plans, fin, children }: { id: string; titre: string; compte: string; plans: PlanFilm[]; fin: ReactNode; children?: ReactNode }) {
   const zone = useRef<HTMLElement>(null)
   const piste = useRef<HTMLUListElement>(null)
   const [course, setCourse] = useState(0)
-  const [clip, setClip] = useState<Media | null>(null)
   const { scrollYProgress } = useScroll({ target: zone, offset: ['start start', 'end end'] })
   const lisse = useSpring(scrollYProgress, { stiffness: 220, damping: 40, restDelta: 0.0005 })
   const defile = useTransform(lisse, v => -v * course)
@@ -48,24 +74,23 @@ export function Pellicule({ medias }: { medias: Media[] }) {
     scrollTo({ top: zone.current!.offsetTop + v * course, behavior: 'instant' })
   }
 
-  if (!medias.length) return null
   return (
-    <section id="videos" ref={zone} tabIndex={-1} aria-labelledby="titre-videos" style={tactile ? undefined : { height: `calc(100svh + ${course}px)` }} className="relative outline-none">
+    <section id={id} ref={zone} tabIndex={-1} aria-labelledby={`titre-${id}`} style={tactile ? undefined : { height: `calc(100svh + ${course}px)` }} className="relative outline-none">
       <div className={cn('flex flex-col justify-center overflow-hidden py-20', !tactile && 'sticky top-0 h-svh')}>
         <div className="mb-[clamp(20px,4vh,44px)] flex items-end justify-between gap-6 px-(--gouttiere)">
-          <h2 id="titre-videos" className="titre">Doublages vidéo</h2>
-          <p className="pb-2 whitespace-nowrap text-doux">{medias.length} extraits</p>
+          <h2 id={`titre-${id}`} className="titre">
+            {titre}
+          </h2>
+          <p className="pb-2 whitespace-nowrap text-doux">{compte}</p>
         </div>
 
         <div onScroll={tactile ? glisser : undefined} className={cn(tactile && 'snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none]')}>
           <motion.ul ref={piste} style={tactile ? undefined : { x }} className="pellicule relative flex w-max gap-[clamp(14px,2vw,28px)] px-(--gouttiere) py-8">
-            {medias.map(m => (
-              <Plan key={m.id} m={m} x={x} ouvert={clip?.id === m.id} ouvrir={() => setClip(m)} centrer={centrer} />
+            {plans.map(p => (
+              <Plan key={p.cle} p={p} x={x} centrer={centrer} />
             ))}
             <li className="w-[min(74vw,620px)] shrink-0 snap-center self-start" onFocus={e => centrer(e.currentTarget)}>
-              <Link to="/doublage" className="group grid aspect-video place-items-center rounded-[10px] border border-dashed border-creme/25 text-center no-underline transition-colors hover:border-or">
-                <span className="px-6 text-[clamp(1.8rem,1.2rem+2.4vw,3.4rem)] leading-none font-extrabold text-creme [font-variation-settings:'wdth'_70] group-hover:text-or">Voir tous les doublages</span>
-              </Link>
+              {fin}
             </li>
           </motion.ul>
         </div>
@@ -74,12 +99,12 @@ export function Pellicule({ medias }: { medias: Media[] }) {
           <motion.div className="h-full bg-or" style={{ width: avance }} />
         </div>
       </div>
-      <Lecteur clip={clip} fermer={() => setClip(null)} />
+      {children}
     </section>
   )
 }
 
-function Plan({ m, x, ouvert, ouvrir, centrer }: { m: Media; x: MotionValue<number>; ouvert: boolean; ouvrir: () => void; centrer: (li: HTMLElement) => void }) {
+function Plan({ p, x, centrer }: { p: PlanFilm; x: MotionValue<number>; centrer: (li: HTMLElement) => void }) {
   const li = useRef<HTMLLIElement>(null)
   const [milieu, setMilieu] = useState(0)
 
@@ -98,10 +123,8 @@ function Plan({ m, x, ouvert, ouvrir, centrer }: { m: Media; x: MotionValue<numb
 
   return (
     <motion.li ref={li} style={{ scale }} className="group w-[min(74vw,620px)] shrink-0 snap-center" onFocus={() => centrer(li.current!)}>
-      <Vignette m={m} ouvert={ouvert} ouvrir={ouvrir} style={{ filter }} />
-      <motion.div style={{ opacity: legende }}>
-        <Legende m={m} />
-      </motion.div>
+      {p.vue({ filter })}
+      <motion.div style={{ opacity: legende }}>{p.legende}</motion.div>
     </motion.li>
   )
 }

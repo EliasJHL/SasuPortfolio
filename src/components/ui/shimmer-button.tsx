@@ -10,6 +10,8 @@ export interface ShimmerButtonProps extends ComponentPropsWithoutRef<"button"> {
   background?: string
   className?: string
   children?: React.ReactNode
+  /** avec une adresse, le bouton est un lien qui s'ouvre dans un nouvel onglet */
+  href?: string
 }
 
 export const ShimmerButton = React.forwardRef<
@@ -25,12 +27,15 @@ export const ShimmerButton = React.forwardRef<
       background = "rgba(0, 0, 0, 1)",
       className,
       children,
+      href,
       ...props
     },
     ref
   ) => {
+    const Balise = (href ? "a" : "button") as "button"
     return (
-      <button
+      <Balise
+        {...(href && { href, target: "_blank", rel: "noopener" })}
         style={
           {
             "--spread": "90deg",
@@ -88,7 +93,7 @@ export const ShimmerButton = React.forwardRef<
             "absolute inset-(--cut) -z-20 [border-radius:var(--radius)] [background:var(--bg)]"
           )}
         />
-      </button>
+      </Balise>
     )
   }
 )

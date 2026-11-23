@@ -11,6 +11,7 @@ import { Accueil } from '@/pages/Accueil'
 import { Categorie } from '@/pages/Categorie'
 import { Coaching } from '@/pages/Coaching'
 import { CV } from '@/pages/CV'
+import { SasuGame } from '@/pages/SasuGame'
 
 const Admin = lazy(() => import('@/admin/Admin'))
 
@@ -47,7 +48,7 @@ function Toast() {
 }
 
 const annee = new Date().getFullYear()
-const TITRES: Record<string, string> = { '/doublage': 'Doublage', '/videos': 'Vidéos', '/production': 'Production', '/cv': 'CV', '/coaching': 'Coaching', '/admin': 'Admin' }
+const TITRES: Record<string, string> = { '/doublage': 'Doublage', '/videos': 'Vidéos', '/production': 'Production', '/sasugame': 'SasuGame', '/cv': 'CV', '/coaching': 'Coaching', '/admin': 'Admin' }
 
 function Erreur() {
   return (
@@ -117,6 +118,7 @@ export default function App() {
                 <Route path="/doublage" element={<Categorie categorie="doublage" />} />
                 <Route path="/videos" element={<Categorie categorie="montage" />} />
                 <Route path="/production" element={<Categorie categorie="production" />} />
+                <Route path="/sasugame" element={<SasuGame />} />
                 <Route path="/cv" element={<CV />} />
                 <Route path="/coaching" element={profil.coaching || admin ? <Coaching /> : <Introuvable />} />
                 <Route

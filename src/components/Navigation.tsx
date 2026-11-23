@@ -1,9 +1,9 @@
 /* Le dock (Magic UI) : les pages, puis le compte Discord.
    Une catégorie sans contenu publié, ou le coaching désactivé, n'apparaît pas pour les visiteurs ;
    l'admin la voit en grisé. */
-import { AudioLines, CalendarCheck, Clapperboard, FileText, House, Mic, type LucideIcon } from 'lucide-react'
+import { AudioLines, CalendarCheck, Clapperboard, FileText, Gamepad2, House, Mic, type LucideIcon } from 'lucide-react'
 import { motion } from 'motion/react'
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router'
 import { useContenu } from '@/contenu'
 import type { Categorie } from '@/lib/projets'
@@ -16,6 +16,7 @@ const PAGES: { to: string; label: string; Icone: LucideIcon; categorie?: Categor
   { to: '/doublage', label: 'Doublage', Icone: Mic, categorie: 'doublage' },
   { to: '/videos', label: 'Vidéos', Icone: Clapperboard, categorie: 'montage' },
   { to: '/production', label: 'Production', Icone: AudioLines, categorie: 'production' },
+  { to: '/sasugame', label: 'SasuGame', Icone: Gamepad2 },
   { to: '/cv', label: 'CV', Icone: FileText },
   { to: '/coaching', label: 'Coaching', Icone: CalendarCheck },
 ]
@@ -36,11 +37,13 @@ export function Navigation() {
   const { profil, medias, cv, session, admin } = useContenu()
   const { pathname } = useLocation()
   const publique = (p: (typeof PAGES)[number]) => (p.categorie ? medias.some(m => m.categorie === p.categorie && m.publie) : p.to === '/cv' ? cv.length > 0 : p.to !== '/coaching' || !!profil?.coaching)
+  // sur téléphone, des icônes plus petites pour que toutes les pages tiennent dans la largeur
+  const [etroit] = useState(() => matchMedia('(max-width: 480px)').matches)
   const avatar = session?.user.user_metadata.avatar_url as string | undefined
 
   return (
     <nav aria-label="Navigation principale" className="pointer-events-none fixed inset-x-0 bottom-[max(12px,env(safe-area-inset-bottom))] z-50 flex justify-center px-3">
-      <Dock iconSize={42} iconMagnification={58} iconDistance={120} className="pointer-events-auto mt-0 h-[60px] gap-1.5 border-white/10 bg-nuit/75 shadow-2xl shadow-black/40">
+      <Dock iconSize={etroit ? 34 : 42} iconMagnification={etroit ? 34 : 58} iconDistance={120} className="pointer-events-auto mt-0 h-[60px] gap-1.5 border-white/10 bg-nuit/75 shadow-2xl shadow-black/40">
         {PAGES.filter(p => admin || publique(p)).map(p => (
           <DockIcon key={p.to} className={cn('relative', !publique(p) && 'opacity-40')}>
             <Lien to={p.to} label={publique(p) ? p.label : `${p.label} (masquée aux visiteurs)`} actif={pathname === p.to}>
