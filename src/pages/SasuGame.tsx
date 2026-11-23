@@ -74,7 +74,7 @@ function Ouverture() {
         <motion.div style={{ scale: nomEchelle, opacity: nomOpacite, filter: nomFlou }} className="relative aspect-[4/1] w-[min(92vw,130svh)] shrink-0 origin-[50%_70%]">
           <TextPressure
             text="SasuGame"
-            fontFamily="Anybody"
+            fontFamily="'Anybody Titre', Anybody"
             fontUrl="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@50..150,100..900&display=swap"
             italic={false}
             idle="wave"

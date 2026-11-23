@@ -61,7 +61,7 @@ export function Profil({ discord, profil }: { discord: ProfilDiscord | null; pro
         <motion.div style={{ scale: nomEchelle, opacity: nomOpacite, filter: nomFlou, top: h * 0.05 }} className="absolute inset-x-0 mx-auto aspect-[2/1] w-[min(92vw,105vh)] origin-[50%_70%]">
           <TextPressure
             text={discord?.nom || profil.pseudo}
-            fontFamily="Anybody"
+            fontFamily="'Anybody Titre', Anybody"
             fontUrl="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@50..150,100..900&display=swap"
             italic={false}
             idle="wave"

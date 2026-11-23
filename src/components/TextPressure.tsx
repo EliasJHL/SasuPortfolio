@@ -78,7 +78,7 @@ const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 const getIdlePressure = (mode: IdleMode, position: number, clock: number, spread: number) => {
   if (mode === 'wave') {
     const crest = 0.5 + 0.5 * Math.cos(Math.PI * 2 * (position / spread - clock / WAVE_PERIOD));
-    return crest * crest;
+    return crest ** 4; // crête étroite : une ou deux lettres gonflées, les autres gardent leur espace
   }
   if (mode === 'pulse') {
     const lag = Math.abs(position - 0.5) * 0.4;
@@ -308,20 +308,15 @@ const TextPressure: React.FC<TextPressureProps> = ({
       const maxDist = Math.max(titleRect.width * options.radius, 1);
       const spread = Math.max(options.radius * 2, 0.2);
       const spans = spansRef.current;
-      const centers = spans.map(span => {
-        if (!span) return null;
-        const rect = span.getBoundingClientRect();
-        return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
-      });
-
       let changed = false;
       spans.forEach((span, i) => {
-        const center = centers[i];
-        if (!span || !center) return;
+        if (!span) return;
+        // places fixes : mesurer la lettre elle-même la ferait trembler (sa taille la déplace, ce qui change sa taille)
+        const position = (i + 0.5) / spans.length;
+        const center = { x: titleRect.left + titleRect.width * position, y: titleRect.top + titleRect.height / 2 };
 
         let pressure = clamp01(1 - dist(mouse, center) / maxDist);
         if (idling) {
-          const position = (center.x - titleRect.left) / Math.max(titleRect.width, 1);
           const resting = getIdlePressure(idleMode, position, clock, spread);
           pressure = resting + (pressure - resting) * engage;
         }
@@ -330,8 +325,8 @@ const TextPressure: React.FC<TextPressureProps> = ({
           pressure = 1 - (1 - pressure) * (1 - swell);
         }
 
-        const wdth = options.width ? Math.floor(50 + 100 * pressure) : 100;
-        const wght = options.weight ? Math.floor(250 + 650 * pressure) : 400;
+        const wdth = options.width ? (50 + 100 * pressure).toFixed(2) : 100;
+        const wght = options.weight ? (250 + 650 * pressure).toFixed(1) : 400;
         const italVal = options.italic ? pressure.toFixed(2) : '0';
         const alphaVal = options.alpha ? pressure.toFixed(2) : '';
         const tint = Math.round((1 - (1 - pressure) * (1 - pressure)) * 100);
@@ -348,11 +343,9 @@ const TextPressure: React.FC<TextPressureProps> = ({
           previous.alphaVal !== alphaVal ||
           previous.color !== color
         ) {
-          // font-weight et font-stretch plutôt que font-variation-settings : Google Fonts envoie des polices statiques
-          // à certains navigateurs (Opera), qui ignorent alors les réglages bas niveau et laissent le nom figé en maigre
-          span.style.fontWeight = String(wght);
-          span.style.fontStretch = `${wdth}%`;
-          span.style.fontVariationSettings = options.italic ? `'ital' ${italVal}` : '';
+          // surtout pas font-weight et font-stretch : Chrome rend certaines valeurs avec la mauvaise largeur et la lettre
+          // saute. La police doit donc être variable partout, Opera compris (« Anybody Titre » dans index.css)
+          span.style.fontVariationSettings = settings;
           span.style.opacity = alphaVal;
           span.style.color = color;
           applied[i] = { span, settings, alphaVal, color };
@@ -389,6 +382,7 @@ const TextPressure: React.FC<TextPressureProps> = ({
     fontFamily,
     fontSize,
     lineHeight: 1,
+    textRendering: 'geometricPrecision',
     transform: `scale(1, ${scaleY})`,
     transformOrigin: 'center top',
     fontWeight: 100,

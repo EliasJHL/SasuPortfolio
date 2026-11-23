@@ -28,6 +28,16 @@
   }
 }
 
+/* Google envoie à Opera une police en crans : le nom animé sauterait d'un cran à l'autre.
+   Ce fichier-ci est toujours la version variable. */
+@font-face {
+  font-family: "Anybody Titre";
+  src: url("https://fonts.gstatic.com/s/anybody/v13/VuJxdNvK2Ib2ppdWSKHdOaNkaRs.woff2") format("woff2");
+  font-weight: 100 900;
+  font-stretch: 50% 150%;
+  font-display: swap;
+}
+
 @layer base {
   :root {
     --gouttiere: clamp(16px, 4vw, 48px);
